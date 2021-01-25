@@ -4,6 +4,7 @@ const Crop = require('./models/crops');
 const cropData = require('./data/cropdata');
 const { query } = require('express');
 const dotenv = require('dotenv').config();
+const queryFunctions = require('./functions/query_functions');
 
 const app = express();
 
@@ -41,8 +42,8 @@ app.get('/api/allcrops', (req, res) => {
 
 // get a single crop by name
 app.get('/api/crop/:name', (req, res) => {
-    const query = new RegExp(req.params.name, 'i');
-    Crop.find({name: query})
+    const parameter = new RegExp(req.params.name, 'i');
+    Crop.find({name: parameter})
         .then(result => {
             res.send(result);
         })
@@ -53,8 +54,8 @@ app.get('/api/crop/:name', (req, res) => {
 
 // get a list of crops by family
 app.get('/api/family/:family', (req, res) => {
-    const query = new RegExp(req.params.family, 'i');
-    Crop.find({family: query})
+    const parameter = new RegExp(req.params.family, 'i');
+    Crop.find({family: parameter})
         .then(result => {
             res.send(result);
         })
@@ -65,8 +66,8 @@ app.get('/api/family/:family', (req, res) => {
 
 // get a list of crops by hardiness
 app.get('/api/hardiness/:hardiness', (req, res) => {
-    const query = new RegExp(req.params.hardiness, 'i');
-    Crop.find({hardiness: query})
+    const parameter = new RegExp(req.params.hardiness, 'i');
+    Crop.find({hardiness: parameter})
         .then(result => {
             res.send(result);
         })
@@ -79,48 +80,95 @@ app.get('/api/hardiness/:hardiness', (req, res) => {
 // TODO - summer squash data due to data structure change will need splitting into seperate bush and trailing varieties
 // TODO - message if search returns nothing
 
+
 // get a list of crops by sowing times for undercover or direct
+// queries: ?range=before/after, ?family=familyname, ?hardiness=Hn
 app.get('/api/sowing/undercover/:month', (req, res) => {
-    const query = new RegExp(req.params.month, 'i');
-    console.log(query)
-    Crop.find({"sowing.undercover": query})
-        .then(result => {
-            res.send(result);
-        })
-        .catch(error => {
-            console.log(error);
-        })
+    const parameter = req.params.month;
+    const query = req.query;
+    let dbQuery = {
+        "sowing.undercover": new RegExp(parameter, 'i')
+    }
+
+    dbQuery = queryFunctions.generateDbQuery(parameter, query, dbQuery);
+    
+    Crop.find(dbQuery)
+    .then(result => {
+        res.send(result);
+    })
+    .catch(error => {
+        console.log(error);
+    })
 });
 
 app.get('/api/sowing/direct/:month', (req, res) => {
-    const query = new RegExp(req.params.month, 'i');
-    Crop.find({"sowing.direct": query})
-        .then(result => {
-            res.send(result);
-        })
-        .catch(error => {
-            console.log(error);
-        })
+    const parameter = req.params.month;
+    const query = req.query;
+    let dbQuery = {
+        "sowing.direct": new RegExp(parameter, 'i')
+    }
+
+    dbQuery = queryFunctions.generateDbQuery(parameter, query, dbQuery);
+    
+    Crop.find(dbQuery)
+    .then(result => {
+        res.send(result);
+    })
+    .catch(error => {
+        console.log(error);
+    })
+});
+
+app.get('/api/sowing/latest/:month', (req, res) => {
+    const parameter = req.params.month;
+    const query = req.query;
+    let dbQuery = {
+        "sowing.latest": new RegExp(parameter, 'i')
+    }
+
+    dbQuery = queryFunctions.generateDbQuery(parameter, query, dbQuery);
+    
+    Crop.find(dbQuery)
+    .then(result => {
+        res.send(result);
+    })
+    .catch(error => {
+        console.log(error);
+    })
 });
 
 // get list of crops by transplanting times
 app.get('/api/transplanting/:month', (req, res) => {
-    const query = new RegExp(req.params.month, 'i');
-    Crop.find({"transplanting.from": query})
-        .then(result => {
-            res.send(result);
-        })
-        .catch(error => {
-            console.log(error);
-        })
+    const parameter = req.params.month;
+    const query = req.query;
+    let dbQuery = {
+        "transplanting.from": new RegExp(parameter, 'i')
+    }
+
+    dbQuery = queryFunctions.generateDbQuery(parameter, query, dbQuery);
+    
+    Crop.find(dbQuery)
+    .then(result => {
+        res.send(result);
+    })
+    .catch(error => {
+        console.log(error);
+    })
 });
 
-
-
 // get a list of crops based on a specified row and interval spacing
+// queries: ?family=familyname, ?hardiness=Hn
 app.get('/api/spacing/:measurements', (req, res) => {
-    const queryArray = req.params.measurements.split(',');
-    Crop.find({"spacing.row": { $lte: queryArray[0]}, "spacing.interval": { $lte: queryArray[1]}})
+    const parameter = req.params.measurements.split(','); // array
+    const query = req.query;
+    let dbQuery = {
+        "spacing.row": {$lte: parameter[0]},
+        "spacing.interval": { $lte: parameter[1]}
+    }
+
+    dbQuery = queryFunctions.generateDbQuery(parameter, query, dbQuery);
+
+    Crop.find(dbQuery)
         .then(result => {
             res.send(result);
         })
@@ -131,8 +179,15 @@ app.get('/api/spacing/:measurements', (req, res) => {
 
 // get a list of crops based on a specified maturity time
 app.get('/api/maturity/:days', (req, res) => {
-    const query = parseInt(req.params.days);
-    Crop.find({"harvesting.maturity.max_days": {$lte: query}})
+    const parameter = req.params.days;
+    const query = req.query;
+    let dbQuery = {
+        "harvesting.maturity.max_days": {$lte: parseInt(parameter)}
+    }
+
+    dbQuery = queryFunctions.generateDbQuery(parameter, query, dbQuery);
+
+    Crop.find(dbQuery)
         .then(result => {
             res.send(result);
         })
